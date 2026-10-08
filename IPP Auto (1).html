@@ -1,0 +1,1171 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Rekonsiliasi Pajak Daerah (BPD) — Multi Kota</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --navy-950:#0c1e33;
+    --navy-900:#12294d;
+    --navy-800:#1a3a68;
+    --navy-700:#24507f;
+    --gold-600:#b78a2e;
+    --gold-500:#cba14a;
+    --gold-100:#f3e6c6;
+    --paper:#eef1ee;
+    --paper-card:#ffffff;
+    --ink:#182233;
+    --ink-soft:#5b6577;
+    --line:#dde2e0;
+    --green-700:#2f7a52;
+    --green-100:#e2f2e8;
+    --red-700:#b23a32;
+    --red-100:#fbe7e4;
+    --amber-100:#faf1de;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--paper);
+    color:var(--ink);
+    font-family:'Inter',sans-serif;
+    -webkit-font-smoothing:antialiased;
+  }
+  .mono{font-family:'IBM Plex Mono',monospace;}
+  .serif{font-family:'Fraunces',serif;}
+
+  /* ---------- header ---------- */
+  header.top{
+    background:linear-gradient(120deg,var(--navy-950),var(--navy-800) 70%);
+    color:#fff;
+    padding:28px 32px 22px;
+    position:relative;
+    overflow:hidden;
+    border-bottom:4px solid var(--gold-600);
+  }
+  header.top::after{
+    content:"";
+    position:absolute; inset:0;
+    background-image:
+      repeating-linear-gradient(45deg, rgba(203,161,74,0.06) 0 2px, transparent 2px 26px);
+    pointer-events:none;
+  }
+  .top-inner{position:relative; z-index:1; display:flex; align-items:flex-start; justify-content:space-between; gap:24px; flex-wrap:wrap;}
+  .brand{display:flex; align-items:center; gap:16px;}
+  .seal{
+    width:56px;height:56px;border-radius:50%;
+    background:radial-gradient(circle at 32% 28%, var(--gold-500), var(--gold-600) 60%, #8a6a1f 100%);
+    display:flex;align-items:center;justify-content:center;
+    font-family:'Fraunces',serif; font-weight:700; color:var(--navy-950); font-size:19px;
+    border:2px solid rgba(255,255,255,0.35);
+    flex-shrink:0;
+  }
+  .brand h1{font-family:'Fraunces',serif; font-weight:600; font-size:26px; margin:0; letter-spacing:0.2px;}
+  .brand p{margin:3px 0 0; color:#c9d5e6; font-size:13.5px;}
+  .stamp{
+    border:1.5px solid var(--gold-500);
+    color:var(--gold-100);
+    padding:8px 16px;
+    border-radius:3px;
+    transform:rotate(-2deg);
+    font-family:'IBM Plex Mono',monospace;
+    font-size:12px;
+    letter-spacing:1.5px;
+    text-align:center;
+    background:rgba(203,161,74,0.08);
+  }
+  #periodLabel{display:block; font-family:'Fraunces',serif; font-size:15px; letter-spacing:0.5px; color:#fff; margin-top:2px;}
+
+  /* ---------- upload bar ---------- */
+  .upload-bar{
+    max-width:1180px; margin:-20px auto 0; position:relative; z-index:2;
+    background:var(--paper-card);
+    border:1px solid var(--line);
+    border-radius:10px;
+    box-shadow:0 10px 30px rgba(12,30,51,0.10);
+    padding:16px 20px;
+    display:flex; align-items:center; gap:16px; flex-wrap:wrap;
+  }
+  .upload-bar .dz{
+    flex:1; min-width:260px;
+    border:1.5px dashed var(--navy-700);
+    border-radius:8px;
+    padding:14px 16px;
+    display:flex; align-items:center; gap:12px;
+    cursor:pointer;
+    transition:background .15s;
+    background:#f7f9fb;
+  }
+  .upload-bar .dz:hover{background:var(--gold-100);}
+  .dz .ico{
+    width:34px;height:34px;border-radius:50%;
+    background:var(--navy-900); color:#fff; display:flex; align-items:center; justify-content:center; flex-shrink:0; font-size:16px;
+  }
+  .dz .txt b{display:block; font-size:13.5px;}
+  .dz .txt span{font-size:12px; color:var(--ink-soft);}
+  .status-pill{
+    font-size:12.5px; padding:6px 12px; border-radius:20px; font-weight:600;
+    background:var(--amber-100); color:#8a6a1f; white-space:nowrap;
+  }
+  .status-pill.ok{background:var(--green-100); color:var(--green-700);}
+  .btn{
+    border:none; border-radius:7px; padding:10px 16px; font-family:'Inter',sans-serif;
+    font-weight:600; font-size:13px; cursor:pointer; transition:transform .1s, box-shadow .15s; white-space:nowrap;
+  }
+  .btn:active{transform:translateY(1px);}
+  .btn-primary{background:var(--navy-900); color:#fff;}
+  .btn-primary:hover{background:var(--navy-800);}
+  .btn-gold{background:var(--gold-600); color:#211a06;}
+  .btn-gold:hover{background:var(--gold-500);}
+  .btn-outline{background:transparent; border:1.3px solid var(--navy-800); color:var(--navy-800);}
+  .btn-outline:hover{background:var(--navy-900); color:#fff;}
+  .btn-ghost{background:transparent; color:var(--ink-soft); border:1px solid var(--line); padding:6px 10px; font-size:12px;}
+  .btn-danger{background:var(--red-100); color:var(--red-700); padding:5px 9px; font-size:11.5px;}
+
+  /* ---------- tabs ---------- */
+  nav.tabs{
+    max-width:1180px; margin:22px auto 0; padding:0 4px;
+    display:flex; gap:6px; border-bottom:2px solid var(--line); flex-wrap:wrap;
+  }
+  nav.tabs button{
+    background:none; border:none; padding:10px 16px; font-size:13.5px; font-weight:600;
+    color:var(--ink-soft); cursor:pointer; border-bottom:3px solid transparent; margin-bottom:-2px;
+    font-family:'Inter',sans-serif;
+  }
+  nav.tabs button.active{color:var(--navy-900); border-bottom-color:var(--gold-600);}
+
+  main{max-width:1180px; margin:0 auto; padding:22px 4px 80px;}
+  .panel{display:none;}
+  .panel.active{display:block; animation:fade .25s ease;}
+  @keyframes fade{from{opacity:0; transform:translateY(4px);} to{opacity:1; transform:translateY(0);}}
+
+  .grid{display:grid; gap:16px;}
+  .grid-4{grid-template-columns:repeat(4,1fr);}
+  .grid-3{grid-template-columns:repeat(3,1fr);}
+  .grid-2{grid-template-columns:1fr 1fr;}
+  @media (max-width:900px){.grid-4{grid-template-columns:repeat(2,1fr);} .grid-3{grid-template-columns:1fr 1fr;} .grid-2{grid-template-columns:1fr;}}
+  @media (max-width:560px){.grid-4{grid-template-columns:1fr;}}
+
+  .card{
+    background:var(--paper-card); border:1px solid var(--line); border-radius:10px;
+    padding:18px 20px;
+  }
+  .card h3{margin:0 0 4px; font-size:12.5px; text-transform:uppercase; letter-spacing:0.6px; color:var(--ink-soft); font-weight:600;}
+  .card .big{font-family:'Fraunces',serif; font-size:30px; font-weight:600; color:var(--navy-950); margin-top:4px;}
+  .card .sub{font-size:12px; color:var(--ink-soft); margin-top:4px;}
+
+  .section-title{
+    display:flex; align-items:baseline; justify-content:space-between; gap:12px; flex-wrap:wrap;
+    margin:28px 0 12px;
+  }
+  .section-title h2{font-family:'Fraunces',serif; font-size:19px; margin:0; color:var(--navy-950);}
+  .section-title .hint{font-size:12px; color:var(--ink-soft);}
+
+  table{width:100%; border-collapse:collapse; background:var(--paper-card); font-size:13px;}
+  thead th{
+    background:var(--navy-900); color:#e9edf3; text-align:left; padding:9px 10px;
+    font-weight:600; font-size:11.5px; text-transform:uppercase; letter-spacing:0.4px; position:sticky; top:0;
+  }
+  tbody td{padding:8px 10px; border-bottom:1px solid var(--line); vertical-align:top;}
+  tbody tr:hover{background:#f6f8fb;}
+  .table-wrap{border:1px solid var(--line); border-radius:10px; overflow:auto; max-height:520px;}
+  td.num, th.num{text-align:right; font-family:'IBM Plex Mono',monospace; font-size:12.3px;}
+  .tag{display:inline-block; padding:2px 9px; border-radius:20px; font-size:11px; font-weight:600;}
+  .tag.done{background:var(--green-100); color:var(--green-700);}
+  .tag.progress{background:var(--amber-100); color:#8a6a1f;}
+  .tag.tahap2{background:#e5edf8; color:var(--navy-800);}
+  .tag.tahap3{background:#f3e6c6; color:#7a5c17;}
+
+  .empty{
+    text-align:center; padding:50px 20px; color:var(--ink-soft); border:1.5px dashed var(--line); border-radius:10px; background:#fafbfa;
+  }
+  .empty b{display:block; color:var(--ink); font-size:15px; margin-bottom:6px; font-family:'Fraunces',serif; font-weight:600;}
+
+  .progressbar{height:8px; border-radius:5px; background:var(--line); overflow:hidden; margin-top:8px;}
+  .progressbar > div{height:100%; background:linear-gradient(90deg,var(--gold-600),var(--green-700));}
+
+  .toolbar{display:flex; gap:10px; flex-wrap:wrap; align-items:center; margin-bottom:12px;}
+  input[type=text], input[type=search], select{
+    border:1px solid var(--line); border-radius:6px; padding:8px 10px; font-size:13px; font-family:'Inter',sans-serif;
+    background:#fff;
+  }
+  input[type=search]{min-width:220px;}
+  .grand{background:var(--gold-100) !important; font-weight:700;}
+  .subhead td{background:var(--navy-900); color:#fff; font-weight:600; font-size:12.5px; letter-spacing:0.3px;}
+
+  .badge-count{
+    display:inline-flex; align-items:center; justify-content:center; min-width:20px; height:20px; padding:0 6px;
+    border-radius:20px; background:var(--gold-600); color:#211a06; font-size:11px; font-weight:700; margin-left:6px;
+  }
+  form.inline-add{display:grid; grid-template-columns:repeat(6,1fr); gap:8px; margin:12px 0 18px; background:#f7f9fb; border:1px solid var(--line); padding:14px; border-radius:8px;}
+  form.inline-add label{font-size:10.5px; text-transform:uppercase; color:var(--ink-soft); font-weight:600; display:block; margin-bottom:3px;}
+  form.inline-add input, form.inline-add select{width:100%;}
+  @media (max-width:900px){form.inline-add{grid-template-columns:repeat(2,1fr);}}
+
+  footer.note{max-width:1180px; margin:10px auto 40px; padding:0 4px; font-size:12px; color:var(--ink-soft); line-height:1.6;}
+  .kbd{font-family:'IBM Plex Mono',monospace; background:#fff; border:1px solid var(--line); padding:1px 6px; border-radius:4px;}
+
+  /* ---------- multi-city bar ---------- */
+  .city-bar{max-width:1180px; margin:14px auto 0; display:flex; align-items:center; gap:10px; flex-wrap:wrap; padding:0 4px;}
+  .city-bar select{font-family:'Inter',sans-serif; font-size:13px; font-weight:600; padding:8px 12px; border-radius:7px; border:1.3px solid var(--navy-800); color:var(--navy-900); background:#fff;}
+  .city-bar .badge-cities{font-size:11.5px; color:var(--ink-soft); background:#fff; border:1px solid var(--line); padding:4px 10px; border-radius:20px;}
+  .add-city-row{max-width:1180px; margin:10px auto 0; background:var(--paper-card); border:1px solid var(--line); border-radius:10px; padding:14px 20px; display:flex; align-items:center; gap:16px; flex-wrap:wrap;}
+  .add-city-row .dz{flex:1; min-width:260px; border:1.5px dashed var(--gold-600); border-radius:8px; padding:12px 16px; display:flex; align-items:center; gap:12px; cursor:pointer; background:#fffaf0;}
+  .add-city-row .dz:hover{background:var(--gold-100);}
+  .add-city-row .ico{width:34px;height:34px;border-radius:50%; background:var(--gold-600); color:#211a06; display:flex; align-items:center; justify-content:center; flex-shrink:0; font-size:16px;}
+  .add-city-row .txt b{display:block; font-size:13.5px;}
+  .add-city-row .txt span{font-size:12px; color:var(--ink-soft);}
+  .city-preview{width:100%; display:none; align-items:center; gap:14px; flex-wrap:wrap; background:#f7f9fb; border:1px solid var(--line); border-radius:8px; padding:12px 14px; margin-top:4px;}
+  .city-preview label{font-size:10.5px; text-transform:uppercase; color:var(--ink-soft); font-weight:600; display:block; margin-bottom:3px;}
+  .city-preview input{padding:7px 10px; border:1px solid var(--line); border-radius:6px; font-size:13px; min-width:220px;}
+  .city-preview .stats{font-size:12.5px; color:var(--ink-soft); flex:1; min-width:220px;}
+  .backup-row{max-width:1180px; margin:10px auto 0; display:flex; align-items:center; gap:10px; padding:0 4px; flex-wrap:wrap;}
+  .backup-row .hint{font-size:11.5px; color:var(--ink-soft);}
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="top-inner">
+    <div class="brand">
+      <div class="seal" id="citySeal">KC</div>
+      <div>
+        <h1 id="cityName">Kota Cimahi</h1>
+        <p>Laporan Rekonsiliasi Pemasangan &amp; Transaksi Pajak Daerah</p>
+      </div>
+    </div>
+    <div class="stamp">
+      PERIODE AKTIF
+      <span id="periodLabel">— belum ada data —</span>
+    </div>
+  </div>
+</header>
+
+<div class="city-bar">
+  <label style="font-size:12px;font-weight:600;color:var(--ink-soft);">Kota/Kabupaten aktif:</label>
+  <select id="citySelect"></select>
+  <span class="badge-cities" id="cityCountBadge">1 kota</span>
+</div>
+
+<div class="upload-bar">
+  <label class="dz" id="dropZone">
+    <div class="ico">⇪</div>
+    <div class="txt">
+      <b>Unggah file rekap transaksi bulanan (mis. 072026 - KOTA CIMAHI.xlsx)</b>
+      <span>Untuk kota yang sedang aktif — data akan otomatis dicocokkan dengan master pemasangan kota tersebut</span>
+    </div>
+    <input type="file" id="fileInput" accept=".xlsx,.xls" style="display:none;">
+  </label>
+  <span class="status-pill" id="statusPill">Menunggu file</span>
+  <button class="btn btn-gold" id="exportBtn" disabled>Unduh Laporan Excel</button>
+</div>
+
+<div class="add-city-row">
+  <label class="dz" id="cityDropZone">
+    <div class="ico">+</div>
+    <div class="txt">
+      <b>+ Tambah Kota Baru — unggah rekap lengkap (mis. Kab_Kudus_2026_-_07_done.xlsx)</b>
+      <span>File hasil "Unduh Laporan Excel" (berisi sheet Rekap Pemasangan + Kendala/Progress) akan dibaca otomatis jadi kota baru</span>
+    </div>
+    <input type="file" id="cityFileInput" accept=".xlsx,.xls" style="display:none;">
+  </label>
+  <span class="status-pill" id="cityStatusPill">Menunggu file</span>
+  <div class="city-preview" id="cityPreviewBox">
+    <div>
+      <label>Nama Kota/Kabupaten</label>
+      <input type="text" id="cityPreviewName" placeholder="mis. Kabupaten Kudus">
+    </div>
+    <div class="stats" id="cityPreviewStats"></div>
+    <button class="btn btn-outline" id="cityPreviewCancel">Batal</button>
+    <button class="btn btn-primary" id="cityPreviewConfirm">+ Tambahkan Kota Ini</button>
+  </div>
+</div>
+
+<div class="backup-row">
+  <button class="btn btn-ghost" id="backupExportBtn">⇩ Ekspor Backup Semua Kota (.json)</button>
+  <label class="btn btn-ghost" style="cursor:pointer;">⇧ Impor Backup (.json)
+    <input type="file" id="backupImportInput" accept=".json" style="display:none;">
+  </label>
+  <span class="hint">Data tersimpan hanya selama tab ini terbuka — ekspor backup untuk melanjutkan sesi lain kali.</span>
+</div>
+
+<nav class="tabs">
+  <button data-tab="ringkasan" class="active">Ringkasan</button>
+  <button data-tab="pemasangan">Rekap Pemasangan</button>
+  <button data-tab="transaksi">Data Transaksi</button>
+  <button data-tab="kendala">Kendala &amp; WP Tutup</button>
+</nav>
+
+<main>
+
+  <!-- ============ RINGKASAN ============ -->
+  <section class="panel active" id="panel-ringkasan">
+    <div class="grid grid-4" id="kpiCards"></div>
+
+    <div class="section-title">
+      <h2>Metode Pengambilan Data (Master Terpasang)</h2>
+      <span class="hint">Dihitung dari Rekap Pemasangan — tidak tergantung file upload</span>
+    </div>
+    <div class="table-wrap"><table id="summaryTable"></table></div>
+
+    <div class="section-title">
+      <h2>Progres Data Tampil per Tahap</h2>
+      <span class="hint">Done = Status Profilling "Profiled" pada master pemasangan</span>
+    </div>
+    <div class="grid grid-2" id="progressCards"></div>
+
+    <div class="section-title">
+      <h2>Perangkat Belum Terdaftar di Master (dari file upload)</h2>
+      <span class="hint" id="unmatchedHint">—</span>
+    </div>
+    <div class="table-wrap"><table id="unmatchedTable"></table></div>
+  </section>
+
+  <!-- ============ REKAP PEMASANGAN ============ -->
+  <section class="panel" id="panel-pemasangan">
+    <div class="toolbar">
+      <input type="search" id="searchPemasangan" placeholder="Cari nama WP / device...">
+      <select id="filterTahapPemasangan">
+        <option value="">Semua Tahap</option>
+      </select>
+      <span class="hint" style="font-size:12px;color:var(--ink-soft)">Total: <b id="countPemasangan">0</b> WP</span>
+      <button class="btn btn-outline" id="toggleAddForm" style="margin-left:auto;">+ Tambah WP ke Master</button>
+    </div>
+    <form class="inline-add" id="addForm" style="display:none;">
+      <div><label>Tahap</label><input id="f_tahap" type="text" list="tahapOptions" placeholder="I / II / III" required><datalist id="tahapOptions"><option value="I"><option value="II"><option value="III"></datalist></div>
+      <div><label>Nama WP</label><input id="f_nama" type="text" required></div>
+      <div><label>Jenis WP</label><select id="f_jenis"><option>Restoran</option><option>Hotel</option><option>Hiburan</option><option>Parkir</option></select></div>
+      <div><label>Device ID</label><input id="f_device" type="text" required></div>
+      <div><label>Jenis Alat</label><input id="f_jenis_alat" type="text" placeholder="Tapping Box / Tablet / Agent"></div>
+      <div><label>Metode Tapping</label><input id="f_metode" type="text" placeholder="Tapping Agent / POS / ..."></div>
+      <div><label>Alamat</label><input id="f_alamat" type="text"></div>
+      <div><label>Tanggal Pasang</label><input id="f_tgl" type="text" placeholder="dd Bulan yyyy"></div>
+      <div><label>No GSM</label><input id="f_gsm" type="text"></div>
+      <div><label>Status Profilling</label><select id="f_status"><option>Profiled</option><option>Progress</option></select></div>
+      <div style="align-self:end;"><button type="submit" class="btn btn-primary" style="width:100%;">Simpan</button></div>
+    </form>
+    <div class="table-wrap"><table id="pemasanganTable"></table></div>
+  </section>
+
+  <!-- ============ DATA TRANSAKSI ============ -->
+  <section class="panel" id="panel-transaksi">
+    <div class="toolbar">
+      <input type="search" id="searchTransaksi" placeholder="Cari nama WP / device...">
+      <span class="hint" style="font-size:12px;color:var(--ink-soft)">Hasil join file upload × master pemasangan, diurutkan berdasarkan Total transaksi</span>
+    </div>
+    <div id="transaksiContent">
+      <div class="empty"><b>Belum ada data transaksi</b>Unggah file rekap bulanan di atas untuk menghasilkan tabel ini secara otomatis.</div>
+    </div>
+  </section>
+
+  <!-- ============ KENDALA ============ -->
+  <section class="panel" id="panel-kendala">
+    <div class="section-title">
+      <h2>Wajib Pajak Tutup Permanen / Alat Ditarik</h2>
+      <span class="hint">Data manual — tidak berubah otomatis saat upload</span>
+    </div>
+    <div class="toolbar"><button class="btn btn-outline" id="addTutupRow">+ Tambah Baris</button></div>
+    <div class="table-wrap"><table id="tutupTable"></table></div>
+
+    <div class="section-title">
+      <h2>Target Penampilan Data &amp; Kendala — Dinas</h2>
+      <span class="hint">Data manual — tidak berubah otomatis saat upload</span>
+    </div>
+    <div class="toolbar"><button class="btn btn-outline" id="addProgressRow">+ Tambah Baris</button></div>
+    <div class="table-wrap"><table id="progressTable"></table></div>
+  </section>
+
+</main>
+
+<footer class="note">
+  Alur kerja per kota: (1) gunakan <b>+ Tambah Kota Baru</b> untuk mengunggah rekap lengkap yang sudah jadi (format seperti
+  <span class="kbd">Kab_Kudus_2026_-_07_done.xlsx</span>, hasil dari tombol Unduh Laporan Excel) — aplikasi otomatis membaca
+  Master Pemasangan, WP Tutup, dan Kendala/Progress-nya lalu menambahkannya sebagai kota baru di pilihan
+  <span class="kbd">Kota/Kabupaten aktif</span>. (2) Pilih kota di atas, lalu unggah file rekap transaksi bulanan (format seperti
+  <span class="kbd">072026 - KOTA CIMAHI.xlsx</span>) — aplikasi mencocokkan setiap Device ID dengan master Rekap Pemasangan kota
+  itu → Data Transaksi &amp; Ringkasan Progres terisi otomatis. Data tiap kota tersimpan selama tab/sesi ini berjalan saja —
+  gunakan <b>Ekspor Backup Semua Kota (.json)</b> agar bisa dilanjutkan lain waktu (impor lagi via tombol di sampingnya), dan
+  <b>Unduh Laporan Excel</b> untuk menyimpan hasil akhir kota yang sedang aktif kapan saja.
+</footer>
+
+<script>
+/* ============================================================
+   MASTER DATA — Rekap Pemasangan Kota Cimahi (BPD)
+   (sumber: Kota_Cimahi_BPD_2026-07_done.xlsx, dapat ditambah manual)
+   ============================================================ */
+let CIMAHI_MASTER = [{"tahap": "II", "nama": "Warung Nasi Alam Sunda", "alamat": "Rest Area Km. 125, Cibeber, Kec. Cimahi Sel., Kota Cimahi, Jawa Barat 40531", "jenis": "Restoran", "device": "PCMH8955", "jenis_alat": "Tablet", "metode": "POS", "tgl": "31 Mei 2023", "gsm": "6281181346347", "status": "Profiled"}, {"tahap": "II", "nama": "Mixue Pesantren", "alamat": "Jl. Pesantren No.24, Cibabat, Kec. Cimahi Utara, Kota Cimahi, Jawa Barat 40513", "jenis": "Restoran", "device": "CMH08919", "jenis_alat": "Tapping Box", "metode": "Printer Data Capture", "tgl": "14 Juni 2023", "gsm": "6281181346348", "status": "Profiled"}, {"tahap": "II", "nama": "Mixue Melong", "alamat": "Jl. Melong 1, Melong, Kec. Cimahi Sel., Kota Cimahi, Jawa Barat 40534", "jenis": "Restoran", "device": "CMH08929", "jenis_alat": "Tapping Box", "metode": "Printer Data Capture", "tgl": "14 Juni 2023", "gsm": "81119516652", "status": "Profiled"}, {"tahap": "II", "nama": "Mixue Lurah", "alamat": "Jl. Lurah No.19, Karangmekar, Kec. Cimahi Tengah, Kota Cimahi, Jawa Barat 40525", "jenis": "Restoran", "device": "CMH08932", "jenis_alat": "Tapping Box", "metode": "Printer Data Capture", "tgl": "14 Juni 2023", "gsm": "6281181346349", "status": "Profiled"}, {"tahap": "II", "nama": "Sate Maranggi H Maya 2", "alamat": "Jl. HMS Mintareja Sarjana Hukum SH, Baros, Kec. Cimahi Tengah, Kota Cimahi, Jawa Barat 40521", "jenis": "Restoran", "device": "ACMH08921", "jenis_alat": "Agent", "metode": "Tapping Agent", "tgl": "14 Juni 2023", "gsm": "81121801926", "status": "Profiled"}, {"tahap": "II", "nama": "Mixue Kolmas", "alamat": "Jl. Kolonel Masturi No.137, Cipageran, Kec. Cimahi Utara, Kota Cimahi, Jawa Barat 40511", "jenis": "Restoran", "device": "CMH08931", "jenis_alat": "Tapping Box", "metode": "Printer Data Capture", "tgl": "14 Juni 2023", "gsm": "81119348694", "status": "Profiled"}, {"tahap": "II", "nama": "Otutu Coffee & Kitchen", "alamat": "Jl. Kerkof No.72, Leuwigajah, Kec. Cimahi Sel., Kota Cimahi, Jawa Barat 40532", "jenis": "Restoran", "device": "ACMH5032", "jenis_alat": "Agent", "metode": "Tapping Agent", "tgl": "01 September 2023", "gsm": "-", "status": "Profiled"}, {"tahap": "II", "nama": "Kane Ramen", "alamat": " Citeureup, Kec. Cimahi Utara, Kota Cimahi, Jawa Barat 40512", "jenis": "Restoran", "device": "CMH00290", "jenis_alat": "Tapping Box", "metode": "Server Data Capture", "tgl": "13 Januari 2025", "gsm": "6281181346351", "status": "Profiled"}, {"tahap": "II", "nama": "Sop Djanda", "alamat": "Jl. Jend. H. Amir Machmud No.605, Setiamanah, Kec. Cimahi Tengah, Kota Cimahi, Jawa Barat", "jenis": "Restoran", "device": "PCMH8679", "jenis_alat": "Tablet", "metode": "POS", "tgl": "18 Maret 2025", "gsm": "6281181346353", "status": "Profiled"}, {"tahap": "II", "nama": "Mie Gacoan Padasuka", "alamat": " Jl.  Jendral achmir Mahmud, Padasuka, kec. Cimahi Tengah.", "jenis": "Restoran", "device": "CMH08918", "jenis_alat": "Tapping Box", "metode": "Server Data Capture", "tgl": "16 Juni 2025", "gsm": "6281181346352", "status": "Profiled"}, {"tahap": "III", "nama": "Sejoli Coffee", "alamat": "Jl. Encep Kartawiria No.208, Citeureup, Kec. Cimahi Utara, Kota Cimahi, Jawa Barat 40512", "jenis": "Restoran", "device": "ACMH0006", "jenis_alat": "Tapping Agent", "metode": "Tapping Agent", "tgl": "17 Juni 2026", "gsm": "-", "status": "Profiled"}, {"tahap": "III", "nama": "Tekun Ciawitali", "alamat": "Jl. Ciawitali No.17, Citeureup, Kec. Cimahi Utara, Kota Cimahi, Jawa Barat 40512", "jenis": "Restoran", "device": "CMH00416", "jenis_alat": "TappingBox", "metode": "Server Data Capture", "tgl": "17 Juni 2026", "gsm": "081114567357", "status": "Profiled"}, {"tahap": "III", "nama": "Temukita Coffe Terrace (P3)", "alamat": "Depan spbu, Gerbang hanjuang, Jl. Cihanjuang No.81A no A2, Cibabat, Kec. Cimahi Utara, Kota Cimahi,", "jenis": "Restoran", "device": "ACMH0005", "jenis_alat": "Tapping Agent", "metode": "Tapping Agent", "tgl": "17 Juni 2026", "gsm": "-", "status": "Profiled"}, {"tahap": "III", "nama": "Cenghar Kopi", "alamat": "Jl. Pesantren No.14, Cibabat, Kec. Cimahi Utara, Kota Cimahi, Jawa Barat 40513", "jenis": "Restoran", "device": "ACMH0004", "jenis_alat": "Tapping Agent", "metode": "Tapping Agent", "tgl": "17 Juni 2026", "gsm": "-", "status": "Profiled"}, {"tahap": "III", "nama": "Kedai Tori", "alamat": "Jl. Karantina Ikan No.3, Citeureup, Kec. Cimahi Utara, Kota Cimahi, Jawa Barat 40525", "jenis": "Restoran", "device": "PCMH4893", "jenis_alat": "Tablet", "metode": "POS", "tgl": "17 Juni 2026", "gsm": "081114567360", "status": "Profiled"}, {"tahap": "III", "nama": "Dahari", "alamat": "Jl. Encep Kartawiria No.207 b, Citeureup, Kec. Cimahi Utara, Kota Cimahi, Jawa Barat 40512", "jenis": "Restoran", "device": "PCMH4674", "jenis_alat": "Tablet", "metode": "POS", "tgl": "17 Juni 2026", "gsm": "081114567361", "status": "Profiled"}, {"tahap": "III", "nama": "Bebek & Ayam Kampung Mas Budi", "alamat": "4G6M+9P8, Jl. Jend. Sudirman, Baros, Kec. Cimahi Tengah, Kota Cimahi, Jawa Barat 40521", "jenis": "Restoran", "device": "ACMH0011", "jenis_alat": "Tapping Agent", "metode": "Tapping Agent", "tgl": "18 Juni 2026", "gsm": "-", "status": "Profiled"}, {"tahap": "III", "nama": "Starbucks Cimahi", "alamat": "Jl. Jend. H. Amir Machmud No.627, Cimahi, Kec. Cimahi Tengah, Kota Cimahi, Jawa Barat 40524", "jenis": "Restoran", "device": "ACMH0002", "jenis_alat": "Tapping Agent", "metode": "Tapping Agent", "tgl": "18 Juni 2026", "gsm": "-", "status": "Profiled"}, {"tahap": "III", "nama": "Baso Laswi", "alamat": "Jl.Raya Barat, Cimahi, Kec. Cimahi Tengah, Kota Cimahi, Jawa Barat 40525", "jenis": "Restoran", "device": "ACMH0007", "jenis_alat": "Tapping Agent", "metode": "Tapping Agent", "tgl": "18 Juni 2026", "gsm": "-", "status": "Profiled"}, {"tahap": "III", "nama": "Rf Cafe Cimahi", "alamat": "Jl. Gandawijaya No.1, Setiamanah, Kec. Cimahi Tengah, Kota Cimahi, Jawa Barat 4052", "jenis": "Restoran", "device": "ACMH0010", "jenis_alat": "Tapping Agent", "metode": "Tapping Agent", "tgl": "18 Juni 2026", "gsm": "-", "status": "Profiled"}, {"tahap": "III", "nama": "The Upperside Cimahi Mall", "alamat": "Rooftop, Cimahi Mall, Setiamanah, Cimahi Tengah, Cimahi City, West Java 40524", "jenis": "Restoran", "device": "ACMH0009", "jenis_alat": "Tapping Agent", "metode": "Tapping Agent", "tgl": "19 Juni 2026", "gsm": "-", "status": "Profiled"}, {"tahap": "III", "nama": "Giant Ramen", "alamat": "Melong, Kec. Cimahi Sel., Kota Cimahi, Jawa Barat 40534", "jenis": "Restoran", "device": "ACMH0013", "jenis_alat": "Tapping Agent", "metode": "Tapping Agent", "tgl": "19 Juni 2026", "gsm": "-", "status": "Profiled"}, {"tahap": "III", "nama": "Oharang Bbq", "alamat": "Jl. Jend. H. Amir Machmud No.674, Cimahi, Kec. Cimahi Tengah, Kota Cimahi, Jawa Barat 40525", "jenis": "Restoran", "device": "ACMH0008", "jenis_alat": "Tapping Agent", "metode": "Tapping Agent", "tgl": "19 Juni 2026", "gsm": "-", "status": "Profiled"}, {"tahap": "III", "nama": "Teras Ciseupan", "alamat": "Pancanaka Hill, Jalan Sanghyang, RW.07, Cibeber, Kec. Cimahi Sel., Kota Cimahi, Jawa Barat 40531", "jenis": "Restoran", "device": "ACMH0012", "jenis_alat": "Tapping Agent", "metode": "Tapping Agent", "tgl": "19 Juni 2026", "gsm": "-", "status": "Profiled"}, {"tahap": "III", "nama": "Haus! Unjani", "alamat": "Jl. Unjani No.E7, Cibeber, cibeber, Kota Cimahi, Jawa Barat 40531", "jenis": "Restoran", "device": "ACMH0003", "jenis_alat": "Tapping Agent", "metode": "Tapping Agent", "tgl": "19 Juni 2026", "gsm": "-", "status": "Profiled"}, {"tahap": "III", "nama": "Tekun Cijerah", "alamat": "Jl. Melong 1 No.14, Melong, Kec. Cimahi Sel., Kota Cimahi, Jawa Barat 40534", "jenis": "Restoran", "device": "CMH00417", "jenis_alat": "TappingBox", "metode": "Tapping Agent", "tgl": "19 Juni 2026", "gsm": "081114567358", "status": "Profiled"}, {"tahap": "III", "nama": "Marugame Udon Yogya", "alamat": "Jl. Jend. H. Amir Machmud No.128, Cibabat, Kec. Cimahi Utara, Kota Cimahi, Jawa Barat 40513", "jenis": "Restoran", "device": "CMH00418", "jenis_alat": "TappingBox", "metode": "Server Data Capture", "tgl": "26 Juni 2026", "gsm": "081114567359", "status": "Profiled"}, {"tahap": "III", "nama": "Richeese Factory Cimahi", "alamat": "Jl. Jend. H. Amir Machmud No.441, Cigugur Tengah, Kec. Cimahi Tengah, Kota Cimahi, Jawa Barat 40522", "jenis": "Restoran", "device": "ACMH0015", "jenis_alat": "Tapping Agent", "metode": "Tapping Agent", "tgl": "26 Juni 2026", "gsm": "-", "status": "Profiled"}, {"tahap": "III", "nama": "Baso Trisno 3", "alamat": "Jl. Jend. H. Amir Machmud No.8, Cigugur Tengah, Kec. Cimahi Tengah, Kota Cimahi, Jawa Barat 40523", "jenis": "Restoran", "device": "ACMH0014", "jenis_alat": "Tapping Agent", "metode": "Tapping Agent", "tgl": "26 Juni 2026", "gsm": "-", "status": "Profiled"}, {"tahap": "III", "nama": "Kopi Kenangan Padasuka", "alamat": "l. Jend. H. Amir Machmud No.462, Padasuka, Kec. Cimahi Tengah, Kota Cimahi, Jawa Barat 40525", "jenis": "Restoran", "device": "ACMH0018", "jenis_alat": "Tapping Agent", "metode": "Tapping Agent", "tgl": "10 July 2026", "gsm": "-", "status": "Profiled"}, {"tahap": "III", "nama": "Roti'O Cibabat", "alamat": "Roti'o (coffee'o, Jl. Raya Cibabat No.454, Cibabat, Kec. Cimahi Tengah, Kota Cimahi, Jawa Barat 40552", "jenis": "Restoran", "device": "ACMH0017", "jenis_alat": "Tapping Agent", "metode": "Tapping Agent", "tgl": "10 July 2026", "gsm": "-", "status": "Profiled"}, {"tahap": "III", "nama": "Chatime Cimahi", "alamat": "4H73+QM5, Cibabat, Kec. Cimahi Utara, Kota Cimahi, Jawa Barat 40522", "jenis": "Restoran", "device": "CMH00419", "jenis_alat": "TappingBox", "metode": "Printer Data Capture", "tgl": "10 July 2026", "gsm": "081114567358", "status": "Profiled"}, {"tahap": "III", "nama": "Bagi Kopi Cimahi Tengah", "alamat": " Jl. Gatot Subroto No.F-20, Karangmekar, Kec. Cimahi Tengah, Kota Cimahi, Jawa Barat 40523", "jenis": "Restoran", "device": "ACMH0016", "jenis_alat": "Tapping Agent", "metode": "Tapping Agent", "tgl": "10 July 2026", "gsm": "-", "status": "Profiled"}, {"tahap": "III", "nama": "Parkir Rsud Cibabat", "alamat": "Jl. Jend. H. Amir Machmud No.140, Cibabat, Kec. Cimahi Utara, Kota Cimahi, Jawa Barat 40513", "jenis": "Parkir", "device": "ACMH0020", "jenis_alat": "Tapping Agent", "metode": "Tapping Agent", "tgl": "30 July 2026", "gsm": "-", "status": "Profiled"}, {"tahap": "III", "nama": "Parkir Atas Cimahi", "alamat": "Jl. Pasar Atas, Cimahi, Kec. Cimahi Tengah, Kota Cimahi, Jawa Barat 40525", "jenis": "Parkir", "device": "ACMH0021", "jenis_alat": "Tapping Agent", "metode": "Tapping Agent", "tgl": "30 July 2026", "gsm": "-", "status": "Profiled"}, {"tahap": "III", "nama": "Crisbar Bakar Unjani", "alamat": "Jl. Unjani No.246A, Cibeber, Kec. Cimahi Sel., Kota Cimahi, Jawa Barat 40531", "jenis": "Restoran", "device": "ACMH0022", "jenis_alat": "Tapping Agent", "metode": "Tapping Agent", "tgl": "30 July 2026", "gsm": "-", "status": "Progress"}];
+
+let CIMAHI_TUTUP = [
+  {no:1, nama:'Mixue Cihanjuang (Wp Tutup)', jenis:'Restoran', device:'CMH08918', metode:'Tap Printer Image', kendala:'Wajib Pajak Tutup Usaha - Alat sudah Ditarik', rekom:'Rekomendasi untuk Ganti Wajib Pajak', by:'Dinas'},
+  {no:2, nama:'Mixue Citereup', jenis:'Restoran', device:'CMH08930', metode:'Printer Data Capture', kendala:'Wajib Pajak Tutup Usaha - Alat sudah Ditarik', rekom:'Rekomendasi untuk Ganti Wajib Pajak', by:'Dinas'}
+];
+
+let CIMAHI_PROGRESS = [
+  {no:1, nama:'Crispy Bakar Unjani', jenis:'Restoran', device:'ACMH0022', metode:'Tapping Agent', kendala:'Akses Belum Diberikan', rekom:'Dibuatkan Surat Pemberitahuan dari Dinas', by:'Dinas'}
+];
+
+const DEFAULT_METHOD_COLS = ['Server Data Capture','Printer Data Capture','Portable Data Terminal','POS','Hotelq','Tapping Agent'];
+const JENIS_ROWS = ['Hotel','Restoran','Hiburan','Parkir'];
+
+/* ============================================================
+   MULTI-CITY STATE
+   Setiap kota punya objek sendiri: master, tutup, progress,
+   methodCols, rawRows, matched, unmatched, currentPeriod, dst.
+   ============================================================ */
+let CITIES = {};
+let ACTIVE_CITY = null;
+
+function slugify(s){
+  return String(s).trim().toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/(^-|-$)/g,'') || ('kota-'+Date.now());
+}
+function initials(label){
+  const words = String(label).replace(/[()]/g,'').split(/\s+/).filter(Boolean);
+  const stop = ['KOTA','KABUPATEN','KAB','KAB.','(BPD)','BPD'];
+  const keep = words.filter(w=>!stop.includes(w.toUpperCase()));
+  const use = keep.length ? keep : words;
+  return use.slice(0,2).map(w=>w[0]).join('').toUpperCase() || 'XX';
+}
+function titleCase(s){
+  return String(s).trim().toLowerCase().replace(/\b\w/g, c=>c.toUpperCase());
+}
+function makeCity(label, opts){
+  opts = opts || {};
+  return {
+    label: label,
+    seal: initials(label),
+    master: opts.master || [],
+    tutup: opts.tutup || [],
+    progress: opts.progress || [],
+    methodCols: (opts.methodCols || DEFAULT_METHOD_COLS).slice(),
+    rawRows: [], matched: [], unmatched: [],
+    currentPeriod: null, currentFilename: null
+  };
+}
+function city(){ return CITIES[ACTIVE_CITY]; }
+
+/* seed with Kota Cimahi (data awal) */
+CITIES['cimahi'] = makeCity('Kota Cimahi', {master: CIMAHI_MASTER, tutup: CIMAHI_TUTUP, progress: CIMAHI_PROGRESS});
+ACTIVE_CITY = 'cimahi';
+
+function fmtIDR(n){
+  if(n===null||n===undefined||isNaN(n)) return '-';
+  return 'Rp' + Math.round(n).toLocaleString('id-ID');
+}
+function fmtNum(n){ if(n===null||n===undefined||isNaN(n)) return '-'; return Math.round(n).toLocaleString('id-ID'); }
+function norm(s){ return (s===null||s===undefined) ? '' : String(s).trim().toUpperCase(); }
+
+/* ---------------- tabs ---------------- */
+document.querySelectorAll('nav.tabs button').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    document.querySelectorAll('nav.tabs button').forEach(b=>b.classList.remove('active'));
+    document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('panel-'+btn.dataset.tab).classList.add('active');
+  });
+});
+
+/* ---------------- city selector ---------------- */
+function renderCitySelect(){
+  const sel = document.getElementById('citySelect');
+  const keys = Object.keys(CITIES);
+  sel.innerHTML = keys.map(k=>`<option value="${k}" ${k===ACTIVE_CITY?'selected':''}>${CITIES[k].label}</option>`).join('');
+  document.getElementById('cityName').textContent = city().label;
+  document.getElementById('citySeal').textContent = city().seal;
+  document.getElementById('cityCountBadge').textContent = keys.length + (keys.length>1 ? ' kota' : ' kota');
+}
+document.getElementById('citySelect').addEventListener('change', e=>{
+  ACTIVE_CITY = e.target.value;
+  syncUploadStatusForActiveCity();
+  renderCitySelect();
+  renderAll();
+});
+function syncUploadStatusForActiveCity(){
+  const c = city();
+  document.getElementById('periodLabel').textContent = c.currentPeriod || '— belum ada data —';
+  const pill = document.getElementById('statusPill');
+  if(c.currentFilename){ pill.textContent = 'Data dimuat: ' + c.currentFilename; pill.classList.add('ok'); }
+  else { pill.textContent = 'Menunggu file'; pill.classList.remove('ok'); }
+  document.getElementById('exportBtn').disabled = !(c.master.length || c.rawRows.length);
+}
+
+/* ---------------- upload handling (rekap transaksi bulanan, per kota aktif) ---------------- */
+const dropZone = document.getElementById('dropZone');
+const fileInput = document.getElementById('fileInput');
+dropZone.addEventListener('click', ()=>fileInput.click());
+dropZone.addEventListener('dragover', e=>{e.preventDefault(); dropZone.style.background='var(--gold-100)';});
+dropZone.addEventListener('dragleave', ()=>{dropZone.style.background='';});
+dropZone.addEventListener('drop', e=>{
+  e.preventDefault(); dropZone.style.background='';
+  if(e.dataTransfer.files.length) handleFile(e.dataTransfer.files[0]);
+});
+fileInput.addEventListener('change', e=>{
+  if(e.target.files.length) handleFile(e.target.files[0]);
+});
+
+function handleFile(file){
+  const pill = document.getElementById('statusPill');
+  pill.textContent = 'Membaca file...'; pill.classList.remove('ok');
+  const reader = new FileReader();
+  reader.onload = function(e){
+    try{
+      const data = new Uint8Array(e.target.result);
+      const wb = XLSX.read(data, {type:'array', cellDates:false});
+      const sheet = wb.Sheets[wb.SheetNames[0]];
+      const rows = XLSX.utils.sheet_to_json(sheet, {header:1, raw:true, defval:null});
+      parseRawRows(rows, file.name);
+      pill.textContent = 'Data dimuat: ' + file.name;
+      pill.classList.add('ok');
+      document.getElementById('exportBtn').disabled = false;
+      renderAll();
+    }catch(err){
+      console.error(err);
+      pill.textContent = 'Gagal membaca file — pastikan format .xlsx sesuai';
+      pill.classList.remove('ok');
+    }
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+function parseRawRows(rows, filename){
+  const c = city();
+  c.currentFilename = filename;
+  // locate header row: first cell (any case) equals 'NO'
+  let headerIdx = -1;
+  for(let i=0;i<rows.length;i++){
+    const c0 = rows[i] && rows[i][0];
+    if(typeof c0 === 'string' && c0.trim().toUpperCase()==='NO'){ headerIdx = i; break; }
+  }
+  // try to detect period text from the first couple of rows / filename
+  let period = null;
+  for(let i=0;i<Math.min(rows.length,4);i++){
+    const txt = (rows[i]||[]).filter(Boolean).join(' ');
+    const m = txt.match(/(\d{2})\s*[.\/-]?\s*(20\d{2})/);
+    if(m){ period = m[1] + '/' + m[2]; break; }
+  }
+  if(!period){
+    const m2 = filename.match(/(\d{2})(\d{4})/);
+    if(m2) period = m2[1] + '/' + m2[2];
+  }
+  c.currentPeriod = period || '—';
+  document.getElementById('periodLabel').textContent = c.currentPeriod;
+
+  c.rawRows = [];
+  if(headerIdx === -1) return;
+  for(let i=headerIdx+1;i<rows.length;i++){
+    const r = rows[i];
+    if(!r || r[0]===null || r[0]===undefined || r[0]==='') continue;
+    if(typeof r[0]==='string' && isNaN(parseFloat(r[0]))) continue; // stop at stray text rows
+    c.rawRows.push({
+      no:r[0], nama:r[1], jenis:r[2], device:r[3], metode:r[4],
+      receipt:r[5]||0, subtotal:r[6]||0, discount:r[7]||0, service:r[8]||0,
+      tax:r[9]||0, total:r[10]||0, aktifAlat:r[11], aktifData:r[12], statusBulanIni:r[13]
+    });
+  }
+
+  // join with master
+  rejoinMasterAndRaw();
+}
+
+/* ---------------- rendering ---------------- */
+function renderAll(){
+  renderCitySelect();
+  renderKPI();
+  renderSummaryTable();
+  renderProgressCards();
+  renderUnmatched();
+  renderPemasangan();
+  renderTransaksi();
+  renderTutup();
+  renderProgressTable();
+}
+
+function computeSummary(){
+  const c = city();
+  const table = {};
+  JENIS_ROWS.forEach(j=>{ table[j] = {}; c.methodCols.forEach(m=>table[j][m]=0); });
+  c.master.forEach(m=>{
+    const j = JENIS_ROWS.includes(m.jenis) ? m.jenis : 'Restoran';
+    if(!table[j]) { table[j] = {}; c.methodCols.forEach(mc=>table[j][mc]=0); }
+    let col = c.methodCols.find(mc=>norm(mc)===norm(m.metode));
+    if(!col){
+      const nm = norm(m.metode);
+      if(nm.includes('SERVER')) col=findCol(c,'Server Data Capture');
+      else if(nm.includes('PRINTER')) col=findCol(c,'Printer Data Capture');
+      else if(nm.includes('PORTABLE')||nm.includes('PDT')) col=findCol(c,'Portable Data Terminal');
+      else if(nm.includes('POS')) col=findCol(c,'POS');
+      else if(nm.includes('HOTEL')) col=findCol(c,'Hotelq');
+      else col=findCol(c,'Tapping Agent');
+    }
+    table[j][col] = (table[j][col]||0) + 1;
+  });
+  return table;
+}
+function findCol(c, preferred){
+  return c.methodCols.find(m=>norm(m)===norm(preferred)) || c.methodCols[c.methodCols.length-1];
+}
+
+function computeProgressByTahap(){
+  const res = {};
+  city().master.forEach(m=>{
+    const t = m.tahap || '-';
+    if(!res[t]) res[t] = {done:0,total:0};
+    res[t].total++;
+    if(norm(m.status)==='PROFILED') res[t].done++;
+  });
+  return res;
+}
+
+function renderKPI(){
+  const c = city();
+  const totalWP = c.master.length;
+  const tahapKeys = Array.from(new Set(c.master.map(m=>m.tahap))).sort();
+  const tahapSub = tahapKeys.map(t=>`Tahap ${t}: ${c.master.filter(m=>m.tahap===t).length}`).join(' · ') || '—';
+  const totalTransaksi = c.matched.reduce((s,r)=>s+(parseFloat(r.total)||0),0);
+  const cards = [
+    {label:'Total WP Terpasang', value: totalWP, sub: tahapSub},
+    {label:'WP Cocok di File Upload', value: c.matched.length, sub: c.rawRows.length ? `dari ${c.rawRows.length} baris file` : 'belum ada file'},
+    {label:'Belum Terdaftar (Baru)', value: c.unmatched.length, sub: c.unmatched.length ? 'perlu ditambahkan ke master' : 'semua device dikenali'},
+    {label:'Total Transaksi (Rp)', value: fmtIDR(totalTransaksi), sub: c.currentPeriod ? 'Periode ' + c.currentPeriod : '—', isText:true}
+  ];
+  document.getElementById('kpiCards').innerHTML = cards.map(cd=>`
+    <div class="card">
+      <h3>${cd.label}</h3>
+      <div class="big">${cd.isText? cd.value : fmtNum(cd.value)}</div>
+      <div class="sub">${cd.sub}</div>
+    </div>`).join('');
+}
+
+function renderSummaryTable(){
+  const c = city();
+  const table = computeSummary();
+  let html = '<thead><tr><th>Jenis WP</th>' + c.methodCols.map(m=>`<th class="num">${m}</th>`).join('') + '<th class="num">Total</th></tr></thead><tbody>';
+  let grand = c.methodCols.map(()=>0);
+  JENIS_ROWS.forEach(j=>{
+    const row = table[j] || {};
+    let rowTotal = 0;
+    const cells = c.methodCols.map((m,idx)=>{ const v = row[m]||0; rowTotal+=v; grand[idx]+=v; return `<td class="num">${v}</td>`; }).join('');
+    html += `<tr><td>${j}</td>${cells}<td class="num" style="font-weight:700;">${rowTotal}</td></tr>`;
+  });
+  const grandTotal = grand.reduce((a,b)=>a+b,0);
+  html += `<tr class="grand"><td>Total</td>${grand.map(v=>`<td class="num">${v}</td>`).join('')}<td class="num">${grandTotal}</td></tr>`;
+  html += '</tbody>';
+  document.getElementById('summaryTable').innerHTML = html;
+}
+
+function renderProgressCards(){
+  const prog = computeProgressByTahap();
+  const keys = Object.keys(prog).sort();
+  if(!keys.length){ document.getElementById('progressCards').innerHTML = '<div class="empty"><b>Belum ada data master</b>Tambahkan WP atau unggah rekap kota.</div>'; return; }
+  document.getElementById('progressCards').innerHTML = keys.map(k=>{
+    const p = prog[k];
+    const pct = p.total ? Math.round(p.done/p.total*100) : 0;
+    return `<div class="card">
+      <h3>Tahap ${k}</h3>
+      <div class="big">${p.done} <span style="font-size:16px;color:var(--ink-soft);font-family:'Inter'">/ ${p.total} Done</span></div>
+      <div class="progressbar"><div style="width:${pct}%"></div></div>
+      <div class="sub">${pct}% profil selesai · ${p.total-p.done} dalam progres</div>
+    </div>`;
+  }).join('');
+}
+
+function renderUnmatched(){
+  const c = city();
+  const hint = document.getElementById('unmatchedHint');
+  hint.textContent = c.unmatched.length ? `${c.unmatched.length} device pada file upload belum ada di master pemasangan` : (c.rawRows.length ? 'Semua device pada file upload sudah terdaftar' : 'Belum ada file diunggah');
+  const t = document.getElementById('unmatchedTable');
+  if(!c.unmatched.length){ t.innerHTML=''; return; }
+  let html = '<thead><tr><th>Nama WP (file)</th><th>Jenis</th><th>Device ID</th><th>Metode</th><th class="num">Total</th><th></th></tr></thead><tbody>';
+  c.unmatched.forEach((r,idx)=>{
+    html += `<tr><td>${r.nama||''}</td><td>${r.jenis||''}</td><td class="mono">${r.device||''}</td><td>${r.metode||''}</td><td class="num">${fmtIDR(r.total)}</td>
+      <td><button class="btn btn-outline" style="padding:4px 10px;font-size:11.5px;" onclick="quickAddFromUnmatched(${idx})">+ Tambah ke Master</button></td></tr>`;
+  });
+  html += '</tbody>';
+  t.innerHTML = html;
+}
+
+function quickAddFromUnmatched(idx){
+  const r = city().unmatched[idx];
+  document.querySelector('[data-tab="pemasangan"]').click();
+  document.getElementById('addForm').style.display='grid';
+  document.getElementById('f_nama').value = r.nama || '';
+  document.getElementById('f_jenis').value = JENIS_ROWS.includes(r.jenis) ? r.jenis : 'Restoran';
+  document.getElementById('f_device').value = r.device || '';
+  document.getElementById('f_metode').value = r.metode || '';
+  document.getElementById('f_nama').scrollIntoView({behavior:'smooth', block:'center'});
+}
+
+/* ---------------- Rekap Pemasangan tab ---------------- */
+function renderPemasangan(){
+  const c = city();
+  const q = norm(document.getElementById('searchPemasangan').value);
+  const tf = document.getElementById('filterTahapPemasangan').value;
+  const tahapKeys = Array.from(new Set(c.master.map(m=>m.tahap))).sort();
+  const sel = document.getElementById('filterTahapPemasangan');
+  const prevVal = sel.value;
+  sel.innerHTML = '<option value="">Semua Tahap</option>' + tahapKeys.map(t=>`<option value="${t}">Tahap ${t}</option>`).join('');
+  sel.value = tahapKeys.includes(prevVal) ? prevVal : '';
+  let rows = c.master.filter(m=> (!sel.value || m.tahap===sel.value) && (!q || norm(m.nama).includes(q) || norm(m.device).includes(q)));
+  document.getElementById('countPemasangan').textContent = rows.length;
+  let html = '<thead><tr><th>No</th><th>Tahap</th><th>Nama WP</th><th>Jenis</th><th>Device ID</th><th>Jenis Alat</th><th>Metode</th><th>Tgl Pasang</th><th>No GSM</th><th>Status</th><th></th></tr></thead><tbody>';
+  rows.forEach((m,i)=>{
+    const realIdx = c.master.indexOf(m);
+    html += `<tr>
+      <td>${i+1}</td>
+      <td><span class="tag ${m.tahap==='II'?'tahap2':'tahap3'}">Tahap ${m.tahap}</span></td>
+      <td>${m.nama}</td><td>${m.jenis}</td><td class="mono">${m.device}</td>
+      <td>${m.jenis_alat||''}</td><td>${m.metode||''}</td><td>${m.tgl||''}</td><td class="mono">${m.gsm||''}</td>
+      <td><span class="tag ${norm(m.status)==='PROFILED'?'done':'progress'}">${m.status}</span></td>
+      <td><button class="btn btn-danger" onclick="removeMaster(${realIdx})">Hapus</button></td>
+    </tr>`;
+  });
+  html += '</tbody>';
+  document.getElementById('pemasanganTable').innerHTML = html;
+}
+document.getElementById('searchPemasangan').addEventListener('input', renderPemasangan);
+document.getElementById('filterTahapPemasangan').addEventListener('change', renderPemasangan);
+function rejoinMasterAndRaw(){
+  const c = city();
+  c.matched = []; c.unmatched = [];
+  c.rawRows.forEach(row=>{
+    const dev = norm(row.device);
+    const m = c.master.find(x=>norm(x.device)===dev);
+    if(m){ c.matched.push(Object.assign({}, row, {tahap:m.tahap, namaMaster:m.nama, jenisMaster:m.jenis, statusMaster:m.status})); }
+    else { c.unmatched.push(row); }
+  });
+}
+function removeMaster(idx){
+  if(!confirm('Hapus WP ini dari master pemasangan?')) return;
+  const c = city();
+  c.master.splice(idx,1);
+  if(c.rawRows.length) rejoinMasterAndRaw();
+  renderAll();
+}
+document.getElementById('toggleAddForm').addEventListener('click', ()=>{
+  const f = document.getElementById('addForm');
+  f.style.display = f.style.display==='none' ? 'grid' : 'none';
+});
+document.getElementById('addForm').addEventListener('submit', e=>{
+  e.preventDefault();
+  const c = city();
+  c.master.push({
+    tahap: document.getElementById('f_tahap').value,
+    nama: document.getElementById('f_nama').value,
+    jenis: document.getElementById('f_jenis').value,
+    device: document.getElementById('f_device').value,
+    jenis_alat: document.getElementById('f_jenis_alat').value,
+    metode: document.getElementById('f_metode').value,
+    alamat: document.getElementById('f_alamat').value,
+    tgl: document.getElementById('f_tgl').value,
+    gsm: document.getElementById('f_gsm').value || '-',
+    status: document.getElementById('f_status').value
+  });
+  e.target.reset();
+  document.getElementById('addForm').style.display='none';
+  if(c.rawRows.length) rejoinMasterAndRaw();
+  renderAll();
+});
+
+/* ---------------- Data Transaksi tab ---------------- */
+function renderTransaksi(){
+  const c = city();
+  const container = document.getElementById('transaksiContent');
+  if(!c.matched.length){
+    container.innerHTML = '<div class="empty"><b>Belum ada data transaksi</b>Unggah file rekap bulanan di atas untuk menghasilkan tabel ini secara otomatis.</div>';
+    return;
+  }
+  const q = norm(document.getElementById('searchTransaksi').value);
+  let html = '';
+  const tahapKeys = Array.from(new Set(c.master.map(m=>m.tahap))).sort();
+  tahapKeys.forEach(tahap=>{
+    let rows = c.matched.filter(r=>r.tahap===tahap && (!q || norm(r.namaMaster).includes(q) || norm(r.device).includes(q)));
+    rows.sort((a,b)=> (parseFloat(b.total)||0) - (parseFloat(a.total)||0));
+    if(!rows.length && q) return;
+    const grand = rows.reduce((s,r)=>s+(parseFloat(r.total)||0),0);
+    const grandReceipt = rows.reduce((s,r)=>s+(parseFloat(r.receipt)||0),0);
+    html += `<div class="section-title"><h2>Tahap ${tahap}</h2><span class="hint">${rows.length} WP · Total ${fmtIDR(grand)}</span></div>`;
+    html += '<div class="table-wrap"><table><thead><tr><th>No</th><th>Nama WP</th><th>Jenis</th><th>Device ID</th><th>Metode</th><th class="num">Jml Receipt</th><th class="num">Subtotal</th><th class="num">Total</th><th>Aktif Alat(d)</th><th>Aktif Data(d)</th><th>Status Bln Ini</th></tr></thead><tbody>';
+    rows.forEach((r,i)=>{
+      html += `<tr><td>${i+1}</td><td>${r.namaMaster}</td><td>${r.jenisMaster}</td><td class="mono">${r.device}</td><td>${r.metode||''}</td>
+        <td class="num">${fmtNum(r.receipt)}</td><td class="num">${fmtIDR(r.subtotal)}</td><td class="num" style="font-weight:700;">${fmtIDR(r.total)}</td>
+        <td>${r.aktifAlat??'-'}</td><td>${r.aktifData??'-'}</td>
+        <td><span class="tag ${norm(r.statusBulanIni)==='PROFILED'?'done':'progress'}">${r.statusBulanIni||'-'}</span></td></tr>`;
+    });
+    html += `<tr class="grand"><td colspan="5">Total Tahap ${tahap}</td><td class="num">${fmtNum(grandReceipt)}</td><td></td><td class="num">${fmtIDR(grand)}</td><td colspan="3"></td></tr>`;
+    html += '</tbody></table></div>';
+  });
+  container.innerHTML = html || '<div class="empty"><b>Tidak ditemukan</b>Coba kata kunci pencarian lain.</div>';
+}
+document.getElementById('searchTransaksi').addEventListener('input', renderTransaksi);
+
+/* ---------------- Kendala tabs ---------------- */
+function renderTutup(){
+  const arr = city().tutup;
+  let html = '<thead><tr><th>No</th><th>Nama WP</th><th>Jenis</th><th>Device</th><th>Metode</th><th>Kendala</th><th>Rekomendasi</th><th>Follow Up</th><th></th></tr></thead><tbody>';
+  arr.forEach((r,i)=>{
+    html += `<tr>
+      <td>${i+1}</td>
+      <td contenteditable="true" onblur="city().tutup[${i}].nama=this.textContent">${r.nama}</td>
+      <td contenteditable="true" onblur="city().tutup[${i}].jenis=this.textContent">${r.jenis}</td>
+      <td class="mono" contenteditable="true" onblur="city().tutup[${i}].device=this.textContent">${r.device}</td>
+      <td contenteditable="true" onblur="city().tutup[${i}].metode=this.textContent">${r.metode}</td>
+      <td contenteditable="true" onblur="city().tutup[${i}].kendala=this.textContent">${r.kendala}</td>
+      <td contenteditable="true" onblur="city().tutup[${i}].rekom=this.textContent">${r.rekom}</td>
+      <td contenteditable="true" onblur="city().tutup[${i}].by=this.textContent">${r.by}</td>
+      <td><button class="btn btn-danger" onclick="city().tutup.splice(${i},1); renderTutup();">Hapus</button></td>
+    </tr>`;
+  });
+  html += '</tbody>';
+  document.getElementById('tutupTable').innerHTML = html;
+}
+function renderProgressTable(){
+  const arr = city().progress;
+  let html = '<thead><tr><th>No</th><th>Nama WP</th><th>Jenis</th><th>Device</th><th>Metode</th><th>Kendala</th><th>Rekomendasi</th><th>Follow Up</th><th></th></tr></thead><tbody>';
+  arr.forEach((r,i)=>{
+    html += `<tr>
+      <td>${i+1}</td>
+      <td contenteditable="true" onblur="city().progress[${i}].nama=this.textContent">${r.nama}</td>
+      <td contenteditable="true" onblur="city().progress[${i}].jenis=this.textContent">${r.jenis}</td>
+      <td class="mono" contenteditable="true" onblur="city().progress[${i}].device=this.textContent">${r.device}</td>
+      <td contenteditable="true" onblur="city().progress[${i}].metode=this.textContent">${r.metode}</td>
+      <td contenteditable="true" onblur="city().progress[${i}].kendala=this.textContent">${r.kendala}</td>
+      <td contenteditable="true" onblur="city().progress[${i}].rekom=this.textContent">${r.rekom}</td>
+      <td contenteditable="true" onblur="city().progress[${i}].by=this.textContent">${r.by}</td>
+      <td><button class="btn btn-danger" onclick="city().progress.splice(${i},1); renderProgressTable();">Hapus</button></td>
+    </tr>`;
+  });
+  html += '</tbody>';
+  document.getElementById('progressTable').innerHTML = html;
+}
+document.getElementById('addTutupRow').addEventListener('click', ()=>{
+  city().tutup.push({nama:'WP Baru', jenis:'Restoran', device:'', metode:'', kendala:'', rekom:'', by:'Dinas'});
+  renderTutup();
+});
+document.getElementById('addProgressRow').addEventListener('click', ()=>{
+  city().progress.push({nama:'WP Baru', jenis:'Restoran', device:'', metode:'', kendala:'', rekom:'', by:'Dinas'});
+  renderProgressTable();
+});
+
+/* ---------------- Excel export (kota aktif) ---------------- */
+document.getElementById('exportBtn').addEventListener('click', exportExcel);
+function exportExcel(){
+  const c = city();
+  const wb = XLSX.utils.book_new();
+
+  const table = computeSummary();
+  const prog = computeProgressByTahap();
+  let ns = [
+    ['', '', 'Metode Pengambilan Data','','','','','', 'Total'],
+    ['', '', ...c.methodCols, '']
+  ];
+  JENIS_ROWS.forEach(j=>{
+    const row = table[j]||{};
+    let tot = 0; const vals = c.methodCols.map(m=>{tot+=row[m]||0; return row[m]||0;});
+    ns.push(['', j, ...vals, tot]);
+  });
+  ns.push([]);
+  Object.keys(prog).sort().forEach(t=>{
+    ns.push(['','Progres Tahap '+t, 'Done', prog[t].done, 'Total', prog[t].total]);
+  });
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(ns), 'New Summary');
+
+  let rp = [];
+  const tahapKeys = Array.from(new Set(c.master.map(m=>m.tahap))).sort();
+  tahapKeys.forEach(t=>{
+    rp.push([`LAPORAN PEMASANGAN ${c.label.toUpperCase()} TAHAP ${t}`]);
+    rp.push(['No','Nama WP','Alamat','Jenis Wp','Device Id','Jenis Alat','Metode Tapping','Tanggal Pemasangan','No Gsm','Status Profilling']);
+    c.master.filter(m=>m.tahap===t).forEach((m,i)=>{
+      rp.push([i+1, m.nama, m.alamat||'', m.jenis, m.device, m.jenis_alat||'', m.metode||'', m.tgl||'', m.gsm||'-', m.status]);
+    });
+    rp.push([]);
+  });
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(rp), 'Rekap Pemasangan');
+
+  let dt = [];
+  tahapKeys.forEach(t=>{
+    dt.push([`REKAP DATA BULAN ${c.currentPeriod||''}`]);
+    dt.push([`${c.label.toUpperCase()} - TAHAP ${t}`]);
+    dt.push(['No','Nama WP','Jenis WP','ID Device','Metode','Jml Receipt','Subtotal','Discount','Service','Tax','Total','Aktif Alat(d)','Aktif Data(d)','Status Bulan Ini']);
+    let rows = c.matched.filter(r=>r.tahap===t).sort((a,b)=>(parseFloat(b.total)||0)-(parseFloat(a.total)||0));
+    rows.forEach((r,i)=>{
+      dt.push([i+1, r.namaMaster, r.jenisMaster, r.device, r.metode, r.receipt, r.subtotal, r.discount, r.service, r.tax, r.total, r.aktifAlat, r.aktifData, r.statusBulanIni]);
+    });
+    dt.push([]);
+  });
+  if(c.unmatched.length){
+    dt.push(['DEVICE BELUM TERDAFTAR DI MASTER PEMASANGAN']);
+    dt.push(['No','Nama WP','Jenis WP','ID Device','Metode','Jml Receipt','Subtotal','Discount','Service','Tax','Total']);
+    c.unmatched.forEach((r,i)=>dt.push([i+1, r.nama, r.jenis, r.device, r.metode, r.receipt, r.subtotal, r.discount, r.service, r.tax, r.total]));
+  }
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(dt), 'Data Transaksi');
+
+  let kt = [];
+  kt.push(['REKAP WAJIB PAJAK TUTUP PERMANEN / ALAT DITARIK']);
+  kt.push(['No','Nama Wajib Pajak','Jenis','Device Id','Metode','Kendala','Rekomendasi / Tindakan','Follow Up By']);
+  c.tutup.forEach((r,i)=>kt.push([i+1, r.nama, r.jenis, r.device, r.metode, r.kendala, r.rekom, r.by]));
+  kt.push([]);
+  kt.push(['TARGET PENAMPILAN DATA BESERTA KENDALA - DINAS']);
+  kt.push(['No','Nama Wajib Pajak','Jenis','Device Id','Metode','Kendala','Rekomendasi / Tindakan','Follow Up By']);
+  c.progress.forEach((r,i)=>kt.push([i+1, r.nama, r.jenis, r.device, r.metode, r.kendala, r.rekom, r.by]));
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(kt), 'Kendala & Progress');
+
+  const periodTag = (c.currentPeriod||'periode').replace('/','');
+  const cityTag = c.label.replace(/[^a-zA-Z0-9]+/g,'_');
+  XLSX.writeFile(wb, `${cityTag}_BPD_${periodTag}.xlsx`);
+}
+
+/* ============================================================
+   TAMBAH KOTA BARU — unggah rekap lengkap (mis. file "_done.xlsx")
+   Format yang dikenali sama seperti hasil "Unduh Laporan Excel":
+   sheet berisi blok "LAPORAN PEMASANGAN ... TAHAP n" (+header No/Nama WP/...)
+   dan blok kendala/tutup dengan kolom Kendala/Rekomendasi/Follow Up By.
+   ============================================================ */
+const cityDropZone = document.getElementById('cityDropZone');
+const cityFileInput = document.getElementById('cityFileInput');
+cityDropZone.addEventListener('click', ()=>cityFileInput.click());
+cityDropZone.addEventListener('dragover', e=>{e.preventDefault(); cityDropZone.style.background='var(--gold-100)';});
+cityDropZone.addEventListener('dragleave', ()=>{cityDropZone.style.background='';});
+cityDropZone.addEventListener('drop', e=>{
+  e.preventDefault(); cityDropZone.style.background='';
+  if(e.dataTransfer.files.length) handleCityFile(e.dataTransfer.files[0]);
+});
+cityFileInput.addEventListener('change', e=>{
+  if(e.target.files.length) handleCityFile(e.target.files[0]);
+});
+
+function handleCityFile(file){
+  const pill = document.getElementById('cityStatusPill');
+  pill.textContent = 'Membaca file...'; pill.classList.remove('ok');
+  const reader = new FileReader();
+  reader.onload = function(e){
+    try{
+      const data = new Uint8Array(e.target.result);
+      const wb = XLSX.read(data, {type:'array', cellDates:false});
+      const result = parseCityWorkbook(wb, file.name);
+      if(!result || !result.label){
+        pill.textContent = 'Tidak menemukan blok "LAPORAN PEMASANGAN ..." pada file ini';
+        return;
+      }
+      showCityPreview(result);
+      pill.textContent = 'Terbaca: ' + file.name;
+      pill.classList.add('ok');
+    }catch(err){
+      console.error(err);
+      pill.textContent = 'Gagal membaca file — pastikan format .xlsx sesuai';
+      pill.classList.remove('ok');
+    }
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+function normCell(s){ return (s===null||s===undefined) ? '' : String(s).trim().toUpperCase(); }
+
+/* pecah rows jadi sections: {title, headerRow, dataRows} berdasarkan baris header 'No' */
+function findSections(rows){
+  const sections = [];
+  let currentTitle = '';
+  let i = 0;
+  while(i < rows.length){
+    const r = rows[i] || [];
+    const firstNonNull = r.find(c=>c!==null && c!==undefined && String(c).trim()!=='');
+    const isHeader = typeof firstNonNull === 'string' && firstNonNull.trim().toUpperCase()==='NO';
+    if(isHeader){
+      const headerRow = r;
+      const dataRows = [];
+      let j = i+1;
+      while(j < rows.length){
+        const rr = rows[j] || [];
+        const nonBlank = rr.some(c=>c!==null && c!==undefined && String(c).trim()!=='');
+        if(!nonBlank) break;
+        dataRows.push(rr);
+        j++;
+      }
+      sections.push({title: currentTitle, headerRow, dataRows});
+      currentTitle = '';
+      i = j + 1;
+      continue;
+    }
+    const rowText = r.filter(c=>c!==null && c!==undefined && String(c).trim()!=='').join(' ').trim();
+    if(rowText) currentTitle = rowText;
+    i++;
+  }
+  return sections;
+}
+
+function colMapOf(headerRow){
+  const map = {};
+  (headerRow||[]).forEach((h,idx)=>{ if(typeof h==='string' && h.trim()!=='') map[normCell(h)] = idx; });
+  return map;
+}
+function pick(row, map, ...names){
+  for(const n of names){ const idx = map[normCell(n)]; if(idx!==undefined) return row[idx]; }
+  return null;
+}
+function extractTahap(title){
+  const m = String(title||'').match(/TAHAP\s+([IVXLC]+|\d+)/i);
+  return m ? m[1].toUpperCase() : null;
+}
+function extractCityLabel(title){
+  let t = String(title||'');
+  t = t.replace(/^LAPORAN\s+PEMASANGAN\s*/i, '');
+  t = t.replace(/\s*[-–]?\s*TAHAP\s+[IVXLC0-9]+\s*$/i, '');
+  return titleCase(t.trim());
+}
+function fmtTglCell(v){
+  if(v instanceof Date) return v.toLocaleDateString('id-ID', {day:'2-digit', month:'long', year:'numeric'});
+  if(typeof v === 'number' && v > 15000 && v < 80000){
+    const d = new Date(Math.round((v - 25569) * 86400 * 1000));
+    return d.toLocaleDateString('id-ID', {day:'2-digit', month:'long', year:'numeric'});
+  }
+  return v || '';
+}
+
+function parseCityWorkbook(wb, filename){
+  let cityLabel = null;
+  const master = [];   // active WP
+  const tutup = [];
+  const progress = [];
+
+  wb.SheetNames.forEach(sn=>{
+    const sheet = wb.Sheets[sn];
+    const rows = XLSX.utils.sheet_to_json(sheet, {header:1, raw:true, defval:null, cellDates:true});
+    const sections = findSections(rows);
+    sections.forEach(sec=>{
+      const map = colMapOf(sec.headerRow);
+      const titleUp = (sec.title||'').toUpperCase();
+      const hasAlamat = map['ALAMAT'] !== undefined;
+      const hasStatus = map['STATUS PROFILLING'] !== undefined || map['STATUS'] !== undefined;
+      const hasKendala = map['KENDALA'] !== undefined;
+      const isTutupTitle = /TUTUP|DITARIK/.test(titleUp);
+
+      if(hasAlamat){
+        // blok Rekap Pemasangan (kolom lengkap: No, Nama WP, Alamat, Jenis WP, Device Id, [Jenis Alat], Metode Tapping, Tanggal Pemasangan, No Gsm, Status/Keterangan)
+        if(!cityLabel && /LAPORAN PEMASANGAN/i.test(titleUp)) cityLabel = extractCityLabel(sec.title);
+        const tahap = extractTahap(sec.title) || 'I';
+        sec.dataRows.forEach(row=>{
+          const nama = pick(row, map, 'Nama WP');
+          if(!nama) return;
+          const rec = {
+            tahap, nama,
+            alamat: pick(row, map, 'Alamat') || '',
+            jenis: pick(row, map, 'Jenis WP', 'Jenis Wp', 'Jenis') || 'Restoran',
+            device: pick(row, map, 'Device Id', 'Device ID') || '',
+            jenis_alat: pick(row, map, 'Jenis Alat') || '',
+            metode: pick(row, map, 'Metode Tapping', 'Metode') || '',
+            tgl: fmtTglCell(pick(row, map, 'Tanggal Pemasangan', 'Tgl Pasang')),
+            gsm: pick(row, map, 'No Gsm', 'No GSM') || '-',
+            status: pick(row, map, 'Status Profilling', 'Status') || 'Profiled'
+          };
+          if(isTutupTitle || hasStatus===false){
+            tutup.push({
+              nama: rec.nama, jenis: rec.jenis, device: rec.device, metode: rec.metode,
+              kendala: pick(row, map, 'Keterangan', 'Kendala') || 'Tutup Permanen / Alat Ditarik',
+              rekom: pick(row, map, 'Rekomendasi') || 'Rekomendasi untuk Ganti Wajib Pajak',
+              by: pick(row, map, 'Follow Up By') || 'Dinas'
+            });
+          } else {
+            master.push(rec);
+          }
+        });
+      } else if(hasKendala){
+        // blok kendala/progress/tutup (No, Nama WP, Jenis, Device Id, Metode, Kendala, Rekomendasi, Follow Up By)
+        sec.dataRows.forEach(row=>{
+          const nama = pick(row, map, 'Nama Wajib Pajak', 'Nama WP');
+          if(!nama) return;
+          const rec = {
+            nama, jenis: pick(row, map, 'Jenis') || 'Restoran',
+            device: pick(row, map, 'Device Id', 'Device ID') || '',
+            metode: pick(row, map, 'Metode') || '',
+            kendala: pick(row, map, 'Kendala') || '',
+            rekom: pick(row, map, 'Rekomendasi / Tindakan', 'Rekomendasi') || '',
+            by: pick(row, map, 'Follow Up By') || 'Dinas'
+          };
+          if(isTutupTitle) tutup.push(rec); else progress.push(rec);
+        });
+      }
+    });
+  });
+
+  if(!cityLabel){
+    // fallback: coba dari nama file, mis. "Kab_Kudus_2026_-_07_done.xlsx"
+    const base = filename.replace(/\.[a-z0-9]+$/i,'').replace(/_?\d{4}.*$/,'').replace(/_/g,' ');
+    cityLabel = base ? titleCase(base) : null;
+  }
+  return { label: cityLabel, master, tutup, progress, filename };
+}
+
+let PENDING_CITY_IMPORT = null;
+function showCityPreview(result){
+  PENDING_CITY_IMPORT = result;
+  const tahapCounts = {};
+  result.master.forEach(m=>{ tahapCounts[m.tahap] = (tahapCounts[m.tahap]||0)+1; });
+  const tahapTxt = Object.keys(tahapCounts).sort().map(t=>`Tahap ${t}: ${tahapCounts[t]}`).join(' · ') || '0 WP';
+  document.getElementById('cityPreviewName').value = result.label || '';
+  document.getElementById('cityPreviewStats').innerHTML =
+    `<b>${result.master.length}</b> WP master (${tahapTxt}) · <b>${result.tutup.length}</b> WP tutup/ditarik · <b>${result.progress.length}</b> baris kendala/progress`;
+  document.getElementById('cityPreviewBox').style.display = 'flex';
+}
+document.getElementById('cityPreviewCancel').addEventListener('click', ()=>{
+  PENDING_CITY_IMPORT = null;
+  document.getElementById('cityPreviewBox').style.display = 'none';
+  document.getElementById('cityStatusPill').textContent = 'Menunggu file';
+  document.getElementById('cityStatusPill').classList.remove('ok');
+});
+document.getElementById('cityPreviewConfirm').addEventListener('click', ()=>{
+  if(!PENDING_CITY_IMPORT) return;
+  const label = document.getElementById('cityPreviewName').value.trim() || PENDING_CITY_IMPORT.label || ('Kota Baru ' + (Object.keys(CITIES).length+1));
+  let key = slugify(label);
+  if(CITIES[key]){
+    if(!confirm(`Kota "${label}" sudah ada. Timpa data master/tutup/progres kota tersebut dengan file yang baru diunggah?`)) return;
+  }
+  CITIES[key] = makeCity(label, {master: PENDING_CITY_IMPORT.master, tutup: PENDING_CITY_IMPORT.tutup, progress: PENDING_CITY_IMPORT.progress});
+  ACTIVE_CITY = key;
+  PENDING_CITY_IMPORT = null;
+  document.getElementById('cityPreviewBox').style.display = 'none';
+  document.getElementById('cityStatusPill').textContent = 'Kota "'+label+'" ditambahkan';
+  document.getElementById('cityStatusPill').classList.add('ok');
+  syncUploadStatusForActiveCity();
+  renderAll();
+});
+
+/* ---------------- backup semua kota (JSON) ---------------- */
+document.getElementById('backupExportBtn').addEventListener('click', ()=>{
+  const payload = {version:1, exportedAt: new Date().toISOString(), activeCity: ACTIVE_CITY, cities: CITIES};
+  const blob = new Blob([JSON.stringify(payload, null, 2)], {type:'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = 'backup_semua_kota_bpd.json';
+  document.body.appendChild(a); a.click(); a.remove();
+  URL.revokeObjectURL(url);
+});
+document.getElementById('backupImportInput').addEventListener('change', e=>{
+  const file = e.target.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = ev=>{
+    try{
+      const payload = JSON.parse(ev.target.result);
+      if(!payload.cities) throw new Error('format tidak valid');
+      CITIES = payload.cities;
+      ACTIVE_CITY = payload.activeCity && CITIES[payload.activeCity] ? payload.activeCity : Object.keys(CITIES)[0];
+      syncUploadStatusForActiveCity();
+      renderAll();
+      alert('Backup berhasil dimuat: ' + Object.keys(CITIES).length + ' kota.');
+    }catch(err){
+      console.error(err);
+      alert('Gagal memuat file backup. Pastikan file JSON hasil ekspor dari aplikasi ini.');
+    }
+  };
+  reader.readAsText(file);
+  e.target.value = '';
+});
+
+/* initial render */
+syncUploadStatusForActiveCity();
+renderAll();
+</script>
+</body>
+</html>
